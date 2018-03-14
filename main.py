@@ -38,6 +38,8 @@ req = requests.get(url)
 # handle other response than 200
 req.raise_for_status()
 
+print(req.url)
+
 # initialize BeautifulSoup
 soup = bs4.BeautifulSoup(req.text, "lxml")
 
@@ -50,19 +52,25 @@ number_of_pages = list(div.children)[-2]  # selects the second to last element i
 last_page = int(number_of_pages.attrs["href"][-3::])  # very clunky, could be done easier
 # last_page = 10                                                    # if the site is changed, really easily broken
 
+
 # select all tr elements
 all_tr = soup.select("tr")
 
 data = {}
 
+index = 1
 # enumerate and loop through all tr on a page
-while page <= last_page:
+while page <= 5:
 
-    for index, tr in enumerate(all_tr):
+    for ind, tr in enumerate(all_tr):
+        # quick fix for skipping the first row of the table
+        if ind == 0:
+            # skip the header of the table
+            continue
 
         # modify the index for the pages > 1;
-        if page != 1:
-            index = (index + 1) * page
+        # if page != 1:
+        #     index = index * page
 
         # find all td tags in the tr
         tds = tr.find_all("td")
@@ -72,23 +80,31 @@ while page <= last_page:
         i = 0
         # loop through all td's elements inside of the tr element
         for td in tds:
-            # setup None for Anonymous signatures
-            if len(tds) < 4:
-                temp_dict["name"] = None
-                temp_dict["place"] = None
-                temp_dict["occupation"] = None
 
             # setup the dict based on the position of the td inside of the tds list
             if i % len(tds) == 1:
-                # delete/substitute the \xa0 element after every first name
-                text = re.sub("\xa0", " ", td.text)
-                temp_dict["name"] = text
+
+                # setup None for Anonymous signatures
+                if td.text.startswith("Signat"):
+                    temp_dict["name"] = None
+                    temp_dict["place"] = None
+                    temp_dict["occupation"] = None
+
+                    # skip the rest of the td, since everything is set up
+                    continue
+                else:
+                    # delete/substitute the \xa0 element after every first name
+                    text = re.sub("\xa0", " ", td.text)
+                    temp_dict["name"] = text
             elif i % len(tds) == 2:
                 temp_dict["place"] = td.text
             elif i % len(tds) == 3:
                 temp_dict["occupation"] = td.text
             i += 1
+
         data[index] = temp_dict
+        index += 1
+
 
     page += 1
     url = f"http://milionchvilek.cz/podepsali/{page}"
@@ -100,9 +116,9 @@ while page <= last_page:
     # select all tr elements
     all_tr = soup.select("tr")
 
-    print(req.url)
+    # print(req.url)
 
-print(pprint.pformat(data))
+pprint.pformat(data)
 
 # use of functions for further analysis (might get moved to a different file,
 # which will be used only for the analysis)
