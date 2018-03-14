@@ -62,7 +62,7 @@ while page <= last_page:
 
         # modify the index for the pages > 1;
         if page != 1:
-            index = index * page + 1
+            index = (index + 1) * page
 
         # find all td tags in the tr
         tds = tr.find_all("td")
